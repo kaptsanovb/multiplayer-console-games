@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
+#include <arpa/inet.h>
 #include <unistd.h>
 
 
@@ -18,7 +19,7 @@ int main() {
 
 	int sockfd = socket(AF_INET, SOCK_STREAM, 0);
 	connect(sockfd, (struct sockaddr *)&addr, sizeof(addr));
-	send(sockfd, "From client :>", 4, 0);
+	send(sockfd, "From client :>", 20, 0);
 
 	char buf[256];
 	recv(sockfd, buf, 256, 0);

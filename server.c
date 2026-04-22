@@ -26,12 +26,13 @@ int main() {
 	struct sockaddr_in peer_addr;
 	int                peer_addr_len;
 
-	int peer_sockfd = accept(sockfd, (struct sockaddr *) &peer_addr, &peer_addr_len);
+	int peer_sockfd = accept(sockfd, NULL, NULL);
+	close(sockfd);
 
 	char buf[256];
 	recv(peer_sockfd, buf, 256, 0);
 	printf("%s\n", buf);
-	sendto(peer_sockfd, "test!!", 6, 0, (struct sockaddr *) &peer_addr, peer_addr_len);
+	send(peer_sockfd, "test!!", 6, 0);
 
 	close(peer_sockfd);
 	return 0;
