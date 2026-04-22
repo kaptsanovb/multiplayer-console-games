@@ -2,57 +2,70 @@
 
 
 int main() {
-	Connection connection = initialise_game();
+	exch_t *exch;
+	int sockfd = initialise_game(&exch);
 
-	char choice;
 	do {
-		size_t ans_length;
-		char   *ans = NULL;
-		printf("[r]ock, [p]aper, or [s]cissors? ");
-		getline(&ans, &ans_length, stdin);
+		char choice;
+		do {
+			size_t ans_length;
+			char   *ans = NULL;
+			printf("[r]ock, [p]aper, or [s]cissors? ");
+			getline(&ans, &ans_length, stdin);
 
-		if (ans_length < 2 || ans[1] != '\n' || (ans[0] != 'r' && ans[0] != 'p' && ans[0] != 's'))
-			continue;
+			if (ans_length < 2 || ans[1] != '\n' || (ans[0] != 'r' && ans[0] != 'p' && ans[0] != 's'))
+				continue;
 
-		choice = ans[0];
-		break;
+			choice = ans[0];
+			break;
+		} while (true);
+
+
+		char rx[1];
+		(*exch)(sockfd, "d", 1, rx, 1);
+		if (rx[0] != 'd')
+				return 1;
+
+		(*exch)(sockfd, &choice, 1, rx, 1);
+		if ((choice == 'r' && rx[0] == 'r')
+		 || (choice == 'p' && rx[0] == 'p')
+		 || (choice == 's' && rx[0] == 's')
+		)
+			printf("Draw!\n");
+		else if ((choice == 'r' && rx[0] == 's')
+		 || (choice == 'p' && rx[0] == 'r')
+		 || (choice == 's' && rx[0] == 'p')
+		)
+			printf("You win!\n");
+		else if ((choice == 'r' && rx[0] == 'p')
+		 || (choice == 'p' && rx[0] == 's')
+		 || (choice == 's' && rx[0] == 'r')
+		)
+			printf("You lose :<\n");
+		else
+			return 1;
+
+		do {
+			size_t ans_length;
+			char   *ans = NULL;
+			printf("Play again (y/n)? ");
+			getline(&ans, &ans_length, stdin);
+
+			if (ans_length < 2 || ans[1] != '\n' || (ans[0] != 'n' && ans[0] != 'y'))
+				continue;
+
+			choice = ans[0];
+			break;
+		} while (true);
+
+		(*exch)(sockfd, &choice, 1, rx, 1);
+		if (choice == 'n' || rx[0] == 'n') {
+			printf("Game over!\n");
+			close(sockfd);
+			break;
+		}
+
 	} while (true);
-
-	if (connection.host)
-		send(connection.sockfd, "d", 1, 0);
-
-	char rx;
-	recv(connection.sockfd, &rx, 1, 0);
-	if (rx != 'd')
-		return 1;
-
-	if (!connection.host)
-		send(connection.sockfd, "d", 1, 0);
-
-	if (connection.host)
-		send(connection.sockfd, &choice, 1, 0);
-
-	recv(connection.sockfd, &rx, 1, 0);
-	if ((choice == 'r' && rx == 'r')
-	 || (choice == 'p' && rx == 'p')
-	 || (choice == 's' && rx == 's')
-	)
-		printf("Draw!\n");
-	else if ((choice == 'r' && rx == 's')
-	 || (choice == 'p' && rx == 'r')
-	 || (choice == 's' && rx == 'p')
-	)
-		printf("You win!\n");
-	else if ((choice == 'r' && rx == 'p')
-	 || (choice == 'p' && rx == 's')
-	 || (choice == 's' && rx == 'r')
-	)
-		printf("You lose :<\n");
-	else
-		return 1;
-
-	if (!connection.host)
-		send(connection.sockfd, &choice, 1, 0);
 
 	return 0;
 }

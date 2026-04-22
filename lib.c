@@ -10,14 +10,22 @@
 #define PORT htons(9025)
 
 
-typedef struct {
-	bool host;
-	int  sockfd;
-} Connection;
+typedef void exch_t(int sockfd, char *tx, int tx_size, char *rx, int rx_size);
+
+exch_t exch_ashost;
+void exch_ashost(int sockfd, char *tx, int tx_size, char *rx, int rx_maxsize) {
+	send(sockfd, tx, tx_size,    0);
+	recv(sockfd, rx, rx_maxsize, 0);
+}
+
+exch_t exch_asclient;
+void exch_asclient(int sockfd, char *tx, int tx_size, char *rx, int rx_maxsize) {
+	recv(sockfd, rx, rx_maxsize, 0);
+	send(sockfd, tx, tx_size,    0);
+}
 
 
-Connection initialise_game() {
-	Connection connection;
+int initialise_game(exch_t **exch) {
 	int self_sockfd = socket(AF_INET, SOCK_STREAM, 0);
 
 	do {
@@ -31,7 +39,7 @@ Connection initialise_game() {
 
 		switch (ans[0]) {
 			case 'h':
-				connection.host = true;
+				*exch = &exch_ashost;
 
 				int one = 1;
 				setsockopt(self_sockfd, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &one, sizeof(one));
@@ -45,18 +53,18 @@ Connection initialise_game() {
 				listen(self_sockfd, 1);
 
 				printf("Waiting for opponent...\n");
-				connection.sockfd = accept(self_sockfd, NULL, NULL);
+				int sockfd = accept(self_sockfd, NULL, NULL);
 
 				printf("Connected!\n");
-				return connection;
+				return sockfd;
 
 			case 'c':
-				connection.host = false;
-				connection.sockfd = self_sockfd;
+				*exch = &exch_asclient;
 
 				char ip_buf[16];
 				printf("Enter opponent IP: ");
 				scanf("%s", ip_buf);
+				fgetc(stdin);
 
 				struct sockaddr_in peer_addr = {
 					.sin_family = AF_INET,
@@ -68,10 +76,10 @@ Connection initialise_game() {
 				}
 
 				printf("Connecting...\n");
-				connect(connection.sockfd, (struct sockaddr *) &peer_addr, sizeof(peer_addr));
+				connect(self_sockfd, (struct sockaddr *) &peer_addr, sizeof(peer_addr));
 
 				printf("Connected!\n");
-				return connection;
+				return self_sockfd;
 
 			default:
 				continue;
