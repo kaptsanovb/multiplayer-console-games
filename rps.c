@@ -2,10 +2,12 @@
 
 
 int main() {
-	exch_t *exch;
-	int sockfd = initialise_game(&exch);
+	int sockfd = initialise_game();
+	int self_score = 0;
+	int peer_score = 0;
 
 	do {
+		printf("Score: You %d - %d Peer\n", self_score, peer_score);
 		char choice;
 		do {
 			size_t ans_length;
@@ -22,11 +24,11 @@ int main() {
 
 
 		char rx[1];
-		(*exch)(sockfd, "d", 1, rx, 1);
+		exch(sockfd, "d", 1, rx, 1);
 		if (rx[0] != 'd')
 				return 1;
 
-		(*exch)(sockfd, &choice, 1, rx, 1);
+		exch(sockfd, &choice, 1, rx, 1);
 		if ((choice == 'r' && rx[0] == 'r')
 		 || (choice == 'p' && rx[0] == 'p')
 		 || (choice == 's' && rx[0] == 's')
@@ -35,14 +37,16 @@ int main() {
 		else if ((choice == 'r' && rx[0] == 's')
 		 || (choice == 'p' && rx[0] == 'r')
 		 || (choice == 's' && rx[0] == 'p')
-		)
+		) {
 			printf("You win!\n");
-		else if ((choice == 'r' && rx[0] == 'p')
+			++self_score;
+		} else if ((choice == 'r' && rx[0] == 'p')
 		 || (choice == 'p' && rx[0] == 's')
 		 || (choice == 's' && rx[0] == 'r')
-		)
+		) {
 			printf("You lose :<\n");
-		else
+			++peer_score;
+		} else
 			return 1;
 
 		do {
@@ -58,7 +62,7 @@ int main() {
 			break;
 		} while (true);
 
-		(*exch)(sockfd, &choice, 1, rx, 1);
+		exch(sockfd, &choice, 1, rx, 1);
 		if (choice == 'n' || rx[0] == 'n') {
 			printf("Game over!\n");
 			close(sockfd);
